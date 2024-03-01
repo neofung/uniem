@@ -127,11 +127,11 @@ class Trainer:
 
                 folders.sort(key=_inner)
                 logger.warning(
-                    f'Deleting {len(folders) + 1 - self.accelerator.project_configuration.total_limit}'
+                    f'Deleting {len(folders) + 1 - self.accelerator.project_configuration.total_limit} '
                     'checkpoints to make room for new checkpoint.'
                 )
                 for folder in folders[: len(folders) + 1 - self.accelerator.project_configuration.total_limit]:
-                    shutil.rmtree(folder)
+                    shutil.rmtree(folder, ignore_errors=True)
 
         output_dir = os.path.join(output_dir, f'checkpoint_{self.accelerator.save_iteration}')
         if self.accelerator.is_local_main_process:

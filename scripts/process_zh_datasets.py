@@ -7,7 +7,7 @@ from uniem.types import DatasetDescription, UniemDataset
 
 
 def load_cmrc2018():
-    dataset_dict = load_dataset('cmrc2018')
+    dataset_dict = load_dataset('cmrc2018', trust_remote_code=True)
     dataset_dict = cast(DatasetDict, dataset_dict)
     dataset_dict = dataset_dict.rename_columns({'question': 'text', 'context': 'text_pos'})
     return dataset_dict
@@ -135,7 +135,7 @@ chatmed_consult_description = DatasetDescription(
 
 
 def load_amazon_reviews():
-    dataset_dict = load_dataset('amazon_reviews_multi', 'zh')
+    dataset_dict = load_dataset('amazon_reviews_multi', 'zh', revision="f256e74ee2353b7c7854f86f86200f220531caa4", trust_remote_code=True)
     dataset_dict = cast(DatasetDict, dataset_dict)
     dataset_dict = dataset_dict.rename_columns({'review_title': 'text', 'review_body': 'text_pos'})
     return dataset_dict
@@ -296,7 +296,7 @@ dureader_robust_description = DatasetDescription(
 
 
 def load_miracl():
-    dataset_dict = load_dataset('miracl/miracl-corpus', 'zh')
+    dataset_dict = load_dataset('miracl/miracl-corpus', 'zh', trust_remote_code=True)
     dataset_dict = cast(DatasetDict, dataset_dict)
 
     try:

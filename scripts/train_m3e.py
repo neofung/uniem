@@ -1,9 +1,10 @@
 import os
 from pathlib import Path
-from typing import Annotated, Optional, cast
+#from typing import Annotated, Optional, cast
+from typing_extensions import Annotated, Optional, cast, List
 
 import typer
-from accelerate import Accelerator
+from accelerate import Accelerator, DistributedDataParallelKwargs
 from accelerate.utils import ProjectConfiguration, set_seed
 from datasets import Dataset as HfDataset
 from datasets import concatenate_datasets, load_from_disk
@@ -21,11 +22,13 @@ from uniem.trainer import Trainer
 from uniem.training_strategy import BitFitTrainging
 from uniem.types import MixedPrecisionType
 from uniem.utils import ConfigFile, convert_number_to_readable_string, create_adamw_optimizer
+from loguru import logger
+
 
 app = typer.Typer()
 
 
-def load_all_datasets(m3e_datasets_dir: Path) -> list[M3EHfDatsetWithInfo]:
+def load_all_datasets(m3e_datasets_dir: Path) -> List[M3EHfDatsetWithInfo]:
     m3e_datasets = []
     for data_dir in m3e_datasets_dir.glob('*.dataset'):
         dataset_name = data_dir.stem
@@ -40,7 +43,7 @@ def load_all_datasets(m3e_datasets_dir: Path) -> list[M3EHfDatsetWithInfo]:
                 name=dataset_name,
             )
         )
-        print(f'load {dataset_name}')
+        logger.info(f'load {dataset_name}')
     return m3e_datasets
 
 
@@ -93,6 +96,7 @@ def main(
         log_with=['tensorboard'] if use_tensorboard else None,
         dispatch_batches=True,
         split_batches=True,
+        kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=True)],
     )
     accelerator.init_trackers('m3e')
     accelerator.print(f'Parameters: {locals()}')

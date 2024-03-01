@@ -1,5 +1,5 @@
 import functools
-from typing import Sequence, TypeVar, cast
+from typing import Sequence, TypeVar, cast, Union, List
 
 import torch
 
@@ -21,7 +21,7 @@ class FullParametersTraining(TrainingStrategy):
 
 
 class BitFitTrainging(TrainingStrategy):
-    def __init__(self, keywords: Sequence[str] | str = 'bias') -> None:
+    def __init__(self, keywords: Union[Sequence[str], str] = 'bias') -> None:
         if isinstance(keywords, str):
             self.keywords = [keywords]
         else:
@@ -45,12 +45,12 @@ def partial_freeze_gradients(grad, train_indices: torch.Tensor):
 
 class PrefixTraining(TrainingStrategy):
     tokenizer: Tokenizer
-    additional_special_token_ids: list[int]
+    additional_special_token_ids: List[int]
 
     def __init__(
         self,
-        additional_special_tokens: list[str],
-        prefix: str | None = None,
+        additional_special_tokens: List[str],
+        prefix: Union[str, None] = None,
         only_train_additional_special_tokens: bool = True,
     ) -> None:
         self.additional_special_tokens = additional_special_tokens
@@ -86,7 +86,7 @@ class PrefixTraining(TrainingStrategy):
             embedding_layer_weight.register_hook(hook)
         return model
 
-    def apply_dataset(self, dataset: FinetuneDataset | FinetuneIterableDataset):
+    def apply_dataset(self, dataset: Union[FinetuneDataset, FinetuneIterableDataset]):
         if isinstance(dataset, FinetuneDataset):
             return PrefixFinetuneDataset(dataset=dataset.dataset, prefix=self.prefix, record_type=dataset.record_type)
         else:

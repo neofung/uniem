@@ -2,7 +2,7 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Sequence, cast
+from typing_extensions import Any, Iterable, Sequence, cast, Dict, List, Union
 
 import torch
 from datasets import Dataset as HfDataset
@@ -21,11 +21,11 @@ from uniem.types import Tokenizer
 
 
 class PairCollator:
-    def __init__(self, tokenizer: Tokenizer, max_length: int | None = None) -> None:
+    def __init__(self, tokenizer: Tokenizer, max_length: Union[int, None] = None) -> None:
         self.tokenizer = tokenizer
         self.max_length = max_length or tokenizer.model_max_length
 
-    def __call__(self, records: list[PairRecord]) -> dict[str, torch.Tensor]:
+    def __call__(self, records: List[PairRecord]) -> Dict[str, torch.Tensor]:
         texts = [record.text for record in records]
         texts_pos = [record.text_pos for record in records]
 
@@ -54,11 +54,11 @@ class PairCollator:
 
 
 class TripletCollator:
-    def __init__(self, tokenizer: Tokenizer, max_length: int | None = None) -> None:
+    def __init__(self, tokenizer: Tokenizer, max_length: Union[int, None] = None) -> None:
         self.tokenizer = tokenizer
         self.max_length = max_length or tokenizer.model_max_length
 
-    def __call__(self, records: list[TripletRecord]) -> dict[str, torch.Tensor]:
+    def __call__(self, records: List[TripletRecord]) -> Dict[str, torch.Tensor]:
         texts = [record.text for record in records]
         texts_pos = [record.text_pos for record in records]
         texts_neg = [record.text_neg for record in records]
@@ -96,11 +96,11 @@ class TripletCollator:
 
 
 class ScoredPairCollator:
-    def __init__(self, tokenizer: Tokenizer, max_length: int | None = None) -> None:
+    def __init__(self, tokenizer: Tokenizer, max_length: Union[int, None] = None) -> None:
         self.tokenizer = tokenizer
         self.max_length = max_length or tokenizer.model_max_length
 
-    def __call__(self, records: list[ScoredPairRecord]) -> dict[str, torch.Tensor]:
+    def __call__(self, records: List[ScoredPairRecord]) -> Dict[str, torch.Tensor]:
         texts = [record.sentence1 for record in records]
         texts_pair = [record.sentence2 for record in records]
         labels = [record.label for record in records]
@@ -134,8 +134,8 @@ class ScoredPairCollator:
 class FinetuneDataset(Dataset):
     def __init__(
         self,
-        dataset: HfDataset | Sequence[dict],
-        record_type: RecordType | str | None = None,
+        dataset: Union[HfDataset, Sequence[dict]],
+        record_type: Union[RecordType, str, None] = None,
     ) -> None:
         self.dataset = dataset
         if record_type:
@@ -155,8 +155,8 @@ class FinetuneDataset(Dataset):
 class FinetuneIterableDataset(IterableDataset):
     def __init__(
         self,
-        dataset: HfIterableDataset | Iterable[dict],
-        record_type: RecordType | str | None = None,
+        dataset: Union[HfIterableDataset, Iterable[dict]],
+        record_type: Union[RecordType, str, None] = None,
     ) -> None:
         self.dataset = dataset
         if record_type:
@@ -173,21 +173,20 @@ class FinetuneIterableDataset(IterableDataset):
 class PrefixFinetuneDataset(FinetuneDataset):
     def __init__(
         self,
-        dataset: HfDataset | Sequence[dict],
+        dataset: Union[HfDataset, Sequence[dict]],
         prefix: str,
-        record_type: RecordType | str | None = None,
+        record_type: Union[RecordType, str, None] = None,
     ) -> None:
         super().__init__(dataset=dataset, record_type=record_type)
         self.prefix = prefix
 
     def __getitem__(self, index: int):
         record = self.dataset[index]
-        match self.record_type:
-            case RecordType.PAIR:
+        if self.record_type==RecordType.PAIR:
                 record['text'] = self.prefix + record['text']
-            case RecordType.TRIPLET:
+        elif self.record_type== RecordType.TRIPLET:
                 record['text'] = self.prefix + record['text']
-            case RecordType.SCORED_PAIR:
+        elif self.record_type== RecordType.SCORED_PAIR:
                 record['sentence1'] = self.prefix + record['sentence1']
         return self.record_cls(**record)
 
@@ -195,21 +194,20 @@ class PrefixFinetuneDataset(FinetuneDataset):
 class PrefixFinetuneIterableDataset(FinetuneIterableDataset):
     def __init__(
         self,
-        dataset: HfIterableDataset | Iterable[dict],
+        dataset: Union[HfIterableDataset, Iterable[dict]],
         prefix: str,
-        record_type: RecordType | str | None = None,
+        record_type: Union[RecordType, str, None] = None,
     ) -> None:
         super().__init__(dataset=dataset, record_type=record_type)
         self.prefix = prefix
 
     def __iter__(self):
         for record in self.dataset:
-            match self.record_type:
-                case RecordType.PAIR:
+            if self.record_type == RecordType.PAIR:
                     record['text'] = self.prefix + record['text']
-                case RecordType.TRIPLET:
+            elif self.record_type == RecordType.TRIPLET:
                     record['text'] = self.prefix + record['text']
-                case RecordType.SCORED_PAIR:
+            elif self.record_type == RecordType.SCORED_PAIR:
                     record['sentence1'] = self.prefix + record['sentence1']
             yield self.record_cls(**record)
 
@@ -217,7 +215,7 @@ class PrefixFinetuneIterableDataset(FinetuneIterableDataset):
 class MediDataset(Dataset):
     def __init__(
         self,
-        medi_data_file: str | Path,
+        medi_data_file: Union[str, Path],
         batch_size: int = 32,
         pair_or_triplet: str = 'triplet',
         with_prompt: bool = True,
@@ -230,7 +228,7 @@ class MediDataset(Dataset):
         self.drop_last = drop_last
         assert pair_or_triplet in ('pair', 'triplet')
 
-        self._task_records_map: dict[str, list[TripletRecord | PairRecord]] = defaultdict(list)
+        self._task_records_map: dict[str, List[Union[TripletRecord, PairRecord]]] = defaultdict(list)
         for record in medi_data:
             taks_name = record['task_name']
             if with_prompt:
@@ -292,7 +290,7 @@ class MediDataset(Dataset):
 @dataclass
 class TaskBatchIndex:
     name: str
-    batch_index: list[int]
+    batch_index: List[int]
 
 
 @dataclass
@@ -306,11 +304,11 @@ class M3EHfDatsetWithInfo:
 class M3EDataset(Dataset):
     def __init__(
         self,
-        m3e_hf_datasets: list[M3EHfDatsetWithInfo],
+        m3e_hf_datasets: List[M3EHfDatsetWithInfo],
         batch_size: int = 32,
         with_instruction: bool = True,
         drop_last: bool = True,
-        max_samples: int | None = None,
+        max_samples: Union[int, None] = None,
     ):
         self.batch_size = batch_size
         self.drop_last = drop_last

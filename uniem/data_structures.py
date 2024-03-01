@@ -1,7 +1,9 @@
 from dataclasses import dataclass, fields
 from enum import Enum
-from typing import Any
+from typing_extensions import Any, Dict
+import sys
 
+py310 = sys.version_info.minor >= 10 or sys.version_info.major > 3
 
 class RecordType(str, Enum):
     PAIR = 'pair'
@@ -9,20 +11,20 @@ class RecordType(str, Enum):
     SCORED_PAIR = 'scored_pair'
 
 
-@dataclass(slots=True)
+@dataclass(**({"slots": True} if py310 else {}))
 class PairRecord:
     text: str
     text_pos: str
 
 
-@dataclass(slots=True)
+@dataclass(**({"slots": True} if py310 else {}))
 class TripletRecord:
     text: str
     text_pos: str
     text_neg: str
 
 
-@dataclass(slots=True)
+@dataclass(**({"slots": True} if py310 else {}))
 class ScoredPairRecord:
     sentence1: str
     sentence2: str
@@ -30,7 +32,7 @@ class ScoredPairRecord:
 
 
 # * Order matters
-record_type_cls_map: dict[RecordType, Any] = {
+record_type_cls_map: Dict[RecordType, Any] = {
     RecordType.SCORED_PAIR: ScoredPairRecord,
     RecordType.TRIPLET: TripletRecord,
     RecordType.PAIR: PairRecord,
